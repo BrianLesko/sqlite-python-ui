@@ -16,7 +16,7 @@ def db_tree_view(db_name):
     conn.close()
     return "\n".join(result)
 
-st.set_page_config(page_title="SQL Queries",page_icon='')
+st.set_page_config(page_title="SQL Queries",page_icon='',layout='wide')
 tailwind_cdn = """
 <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.23/dist/full.min.css" rel="stylesheet" type="text/css" />
 <script src="https://cdn.tailwindcss.com"></script>
@@ -33,62 +33,22 @@ conn = sqlite3.connect(db) # Connect to a SQLite database (or create it if it do
 cursor = conn.cursor()
 st.sidebar.write("``` \n " + db_tree_view(db)+ " \n ```")
 
-with st.expander("SQL Cheat Sheet"):
-   st.markdown("""
-    ### Basic Queries
-    **Create a Table**
-    ```sql
-    CREATE TABLE users (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT UNIQUE
-    );
-    ```
-
-    **Insert Data**
-    ```sql
-    INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com');
-    ```
-
-    **Select All Records**
-    ```sql
-    SELECT * FROM users;
-    ```
-
-    **Filter Data**
-    ```sql
-    SELECT * FROM users WHERE name = 'Alice';
-    ```
-    """)
-
 if db:
   query = st.text_area("Enter your SQL lite query here:", height=200)
-
+  st.write(f"*For help with queries please [ask ChatGPT](https://chatgpt.com/)*")
   if st.button("Run"):
     try:
       cursor.execute(query)
       conn.commit()
-      if any(query.upper().startswith(keyword) for keyword in ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN"]):
-        response = cursor.fetchall()
-        df = pd.DataFrame(response)
+      response = cursor.fetchall()
+      if response:
+        df = pd.DataFrame(response) if response else None
         df.columns = [desc[0] for desc in cursor.description]
         st.dataframe(df,hide_index=True,use_container_width=True) 
+      else:
+        st.info("Query executed successfully, no data to display.")
     except Exception as e:
       st.error(f"Error executing query: {e}")
       conn.rollback()  # Rollback the transaction to reset the state
       st.error(f"Transaction rolled back.")
       st.info("Please try again")
-
-
-#cursor.execute('''CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)''')
-#cursor.execute('''INSERT INTO users (name, age) VALUES (?, ?)''', ('Alice', 30))
-#conn.commit()
-
-## Query data
-#cursor.execute('''SELECT * FROM users''')
-#rows = cursor.fetchall()
-#for row in rows:
-#    print(row)
-
-# Close the connection
-#conn.close()
